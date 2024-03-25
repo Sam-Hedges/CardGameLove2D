@@ -1,3 +1,4 @@
+---@class Gameobject
 --- The `Gameobject` class serves as a base for all entities in the game that require transformation properties,
 --- such as position, size, rotation, and scale. It provides a foundational set of functionalities for game object
 --- manipulation, including collision detection, input handling (e.g., click, hover), and drawing. This class
@@ -23,14 +24,14 @@
 --- handling (click, hover, drag), drawing, and managing child Gameobjects.
 Gameobject = Object:extend()
 
---Node represent any game object that needs to have some transform available in the game itself.\
+--Gameobject represents any object that needs to have some transform available in the game itself.\
 --Everything that you see in the game is a Node, and some invisible things like the G.ROOM are also\
 --represented here.
 --
 ---@param args {Transform: table, container: Gameobject}
 --**T** The transform ititializer, with keys of x|1, y|2, w|3, h|4, r|5\
 --**container** optional container for this Node, defaults to G.ROOM
-function Gameobject:Initialize(args)
+function Gameobject:new(args)
     --From args, set the values of self transform
     args = args or {}
     args.Transform = args.Transform or {}
@@ -146,7 +147,7 @@ function Gameobject:draw_boundingrect()
 end
 
 --Draws self, then adds self the the draw hash, then draws all children
-function Gameobject:draw()
+function Gameobject:Draw()
     self:draw_boundingrect()
     if self.states.visible then
         add_to_drawhash(self)
@@ -316,7 +317,7 @@ end
 
 --Sets the container of this node and all child nodes to be a new container node
 --
----@param container Node The new node that will behave as this nodes container
+---@param container Gameobject The new node that will behave as this nodes container
 function Gameobject:set_container(container)
     if self.children then
         for _, v in pairs(self.children) do
@@ -328,78 +329,13 @@ end
 
 --Translation function used before any draw calls, translates this node according to the transform of the container node
 function Gameobject:translate_container()
-    if self.container and self.container ~= self then
-        love.graphics.translate(self.container.T.w * Game.TILESCALE * Game.TILESIZE * 0.5,
-            self.container.T.h * Game.TILESCALE * Game.TILESIZE * 0.5)
-        love.graphics.rotate(self.container.T.r)
-        love.graphics.translate(
-            -self.container.T.w * Game.TILESCALE * Game.TILESIZE * 0.5 +
-            self.container.T.x * Game.TILESCALE * Game.TILESIZE,
-            -self.container.T.h * Game.TILESCALE * Game.TILESIZE * 0.5 +
-            self.container.T.y * Game.TILESCALE * Game.TILESIZE)
-    end
+
 end
 
 --When this Gameobject needs to be deleted, removes self from any tables it may have been added to to destroy any weak references
 --Also calls the remove method of all children to have them do the same
-function Gameobject:remove()
-    for k, v in ipairs(Game.INSTANCES.POPUP) do
-        if v == self then
-            table.remove(Game.INSTANCES.POPUP, k)
-            break;
-        end
-    end
-    for k, v in ipairs(Game.INSTANCES.GAMEOBJECT) do
-        if v == self then
-            table.remove(Game.INSTANCES.GAMEOBJECT, k)
-            break;
-        end
-    end
-    for k, v in ipairs(Game.STAGE_OBJECTS[Game.STAGE]) do
-        if v == self then
-            table.remove(Game.STAGE_OBJECTS[Game.STAGE], k)
-            break;
-        end
-    end
-    if self.children then
-        for k, v in pairs(self.children) do
-            v:remove()
-        end
-    end
-    if Game.CONTROLLER.clicked.target == self then
-        Game.CONTROLLER.clicked.target = nil
-    end
-    if Game.CONTROLLER.focused.target == self then
-        Game.CONTROLLER.focused.target = nil
-    end
-    if Game.CONTROLLER.dragging.target == self then
-        Game.CONTROLLER.dragging.target = nil
-    end
-    if Game.CONTROLLER.hovering.target == self then
-        Game.CONTROLLER.hovering.target = nil
-    end
-    if Game.CONTROLLER.released_on.target == self then
-        Game.CONTROLLER.released_on.target = nil
-    end
-    if Game.CONTROLLER.cursor_down.target == self then
-        Game.CONTROLLER.cursor_down.target = nil
-    end
-    if Game.CONTROLLER.cursor_up.target == self then
-        Game.CONTROLLER.cursor_up.target = nil
-    end
-    if Game.CONTROLLER.cursor_hover.target == self then
-        Game.CONTROLLER.cursor_hover.target = nil
-    end
+function Gameobject:Remove()
 
-    self.REMOVED = true
-end
-
---returns the squared(fast) distance in game units from the center of this node to the center of another node
---
----@param other_node Node to measure the distance from
-function Gameobject:fast_mid_dist(other_node)
-    return math.sqrt((other_node.T.x + 0.5 * other_node.T.w) - (self.T.x + self.T.w)) ^ 2 +
-        ((other_node.T.y + 0.5 * other_node.T.h) - (self.T.y + self.T.h)) ^ 2
 end
 
 --Prototype for a click release function, when the cursor is released on this node

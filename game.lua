@@ -1,11 +1,7 @@
---- The `Game` class is responsible for managing the game's lifecycle, including initialization,
---- starting the game, managing saves, handling user input, and rendering. It extends the `Object` class,
---- leveraging its capabilities for object-oriented features. This class acts as the central hub for game
---- management tasks, including profile loading, rendering settings, and managing various game states like
---- the main menu, splash screen, and the main game loop.
+--- The `Game` class is responsible for managing the game's lifecycle, including initialization, starting the game, managing saves, handling user input, and rendering.
 Game = Object:extend()
 
-function Game:Initialize()
+function Game:new()
     G = self
 
     self:SetGlobals()
@@ -19,9 +15,9 @@ function Game:Start()
     ---@todo Load all shaders from resources
     ---@todo Input handler/controller for game objects
 
-    self:LoadProfile()
-    self:SetRenderSettings()
-    self:SetLocal()
+    -- self:LoadProfile()
+    -- self:SetRenderSettings()
+    -- self:SetLocal()
 
     ---@todo Create sprite class
     ---@todo Create the event manager for the game

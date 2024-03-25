@@ -1,5 +1,5 @@
 -- Release State, Update, Hotfix
-local VERSION = '0.0.0' .. _DEMO_MODE and '-DEMO' or '-FULL'
+local VERSION = '0.0.0' .. (_DEMO_MODE and '-DEMO' or '-FULL')
 
 function Game:SetGlobals()
     self.VERSION = VERSION

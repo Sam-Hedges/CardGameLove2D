@@ -1,15 +1,18 @@
---||--
---This Object implementation was taken from SNKRX (MIT license). Slightly modified, this is a very simple OOP base
+--This Object implementation was taken from SNKRX (MIT license). Modified, this is a very simple OOP base
 
--- Object is the base class for all objects, providing basic OOP functionality.
+---@class object
+-- The base class for creating extendable and inheritable objects.
+-- Provides basic object-oriented capabilities like instantiation, method inheritance, and type checking.
 Object = {}
 Object.__index = Object -- Set Object itself as the __index metamethod, enabling inheritance.
 
--- Initializes a new instance of an object. This method should be overridden by subclasses.
-function Object:init()
+--- Initializes a new instance of an object.
+-- This method should be overridden by subclasses to implement specific initializations.
+function Object:new()
 end
 
--- Creates and returns a new class that extends this class.
+--- Creates and returns a new class that extends this class.
+---@return table
 function Object:extend()
     local class = {} -- Create a new class table.
     for key, value in pairs(self) do
@@ -23,7 +26,9 @@ function Object:extend()
     return class              -- Return the new subclass.
 end
 
--- Checks if the instance or class is of, or inherits from, a given type.
+--- Checks if the instance or class is of, or inherits from, a given type.
+---@param T table The class type to check against.
+---@return boolean
 function Object:is(T)
     local metaTable = getmetatable(self)    -- Get the metatable of the current object or class.
     while metaTable do                      -- Traverse the inheritance chain.
@@ -35,9 +40,15 @@ function Object:is(T)
     return false                            -- Return false if no match is found.
 end
 
--- Allows an object to be called like a function, creating and returning a new instance of the object.
+--- Allows an object to be called like a function, creating and returning a new instance of the object.
+-- This method should be used in conjunction with a `new` method defined in subclasses, where actual initialization should happen.
+---@vararg table
+---@param ... table Any parameters passed to the `new` method of the subclass.
+---@return table
+---@usage local myObject = Object()
+---myObject:new("parameters", "here", 123)
 function Object:__call(...)
     local obj = setmetatable({}, self) -- Create a new object instance, setting its metatable to the class.
-    obj:init(...)                      -- Initialize the new object by calling its init method.
+    obj:new(...)                       -- Initialize the new object by calling its init method.
     return obj                         -- Return the new object.
 end
