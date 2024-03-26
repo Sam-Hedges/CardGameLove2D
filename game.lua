@@ -4,10 +4,10 @@ Game = Object:extend()
 function Game:new()
     G = self
 
-    self:SetGlobals()
+    self:set_globals()
 end
 
-function Game:Start()
+function Game:start()
     ---@todo Load the settings file .jkr
     ---@todo Create all sounds from resources and play one each to load into mem
     ---@todo Call the save manager to wait for any save requests
@@ -21,20 +21,38 @@ function Game:Start()
 
     ---@todo Create sprite class
     ---@todo Create the event manager for the game
+
+    local body = Gameobject()
+
+    print(body.ID)
+end
+
+---@todo Implement Game Logic Loop
+function Game:update(dt)
+
+end
+
+---@todo Implement Game Draw Loop
+function Game:draw()
+    for k, value in pairs(self.I.GAMEOBJECT) do
+        love.graphics.push()
+        value:draw()
+        love.graphics.pop()
+    end
 end
 
 ---@todo Implement Profiles
-function Game:LoadProfile(_profile)
+function Game:load_profile(_profile)
 
 end
 
 ---@todo Implement Localization
-function Game:SetLocal()
+function Game:set_local()
 
 end
 
 ---@todo Implement Render Settings
-function Game:SetRenderSettings()
+function Game:set_render_settings()
     -- Set fiter to linear interpolation and nearest, best for pixel art
     love.graphics.setDefaultFilter() ---@todo
     -- Set Line style to rough for pixel art
@@ -43,49 +61,39 @@ function Game:SetRenderSettings()
 end
 
 ---@todo Implement Window Setup
-function Game:InitializeWindow(reset)
+function Game:initialize_window(reset)
 
 end
 
 ---@todo Implement Save Manager
-function Game:SaveProgress()
+function Game:save_progress()
 end
 
-function Game:SaveNotify(card)
+function Game:save_notify(card)
 end
 
-function Game:SaveSettings()
+function Game:save_settings()
 end
 
-function Game:SaveMetrics()
+function Game:save_metrics()
 end
 
 ---@todo Implement Sandbox Mode to test game mechanics
-function Game:Sandbox()
+function Game:sandbox()
 
 end
 
 ---@todo Implement Startup Splash Screen
-function Game:SplashScreen()
+function Game:splash_screen()
 
 end
 
 ---@todo Implement Main Menu
-function Game:MainMenu(change_context) --True if main menu is accessed from the splash screen, false if it is skipped or accessed from the game
+function Game:main_menu(change_context) --True if main menu is accessed from the splash screen, false if it is skipped or accessed from the game
 
 end
 
 ---@todo Implement Start Game
-function Game:StartRun(args)
-
-end
-
----@todo Implement Game Logic Loop
-function Game:Update(dt)
-
-end
-
----@todo Implement Game Draw Loop
-function Game:Draw()
+function Game:start_run(args)
 
 end

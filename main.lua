@@ -1,9 +1,14 @@
-require "engine/colour"
--- require "engine/controller"
--- require "engine/gameobject"
-require "engine/object"
+require "engine/graphics/colour"
+require "engine/core/object"
+require "engine/core/gameobject"
+require "engine/core/transform"
+require "engine/input/controller"
 require "game"
 require "globals"
+
+if _DEBUG_MODE then
+    require("lldebugger").start()
+end
 
 math.randomseed(G.SEED)
 
@@ -60,7 +65,7 @@ function love.load()
 
     love.keyboard.keysPressed = {}
 
-    G:Start()
+    G:start()
 end
 
 function love.update(dt)
@@ -68,7 +73,7 @@ function love.update(dt)
 
     love.keyboard.keysPressed = {}
 
-    G:Update(dt)
+    G:update(dt)
     -- local joysticks = love.joystick.getJoysticks()
     -- if joysticks then
     --     if joysticks[1] then
@@ -78,14 +83,21 @@ end
 
 function love.draw()
     -- draw your stuff here
-    love.graphics.print("FPS: " .. tostring(love.timer.getFPS()), 10, 10)
+
+    local backgroundColour = G.COLOURS.GREY
+    love.graphics.setBackgroundColor(backgroundColour)
+
+    local width, height = love.graphics.getDimensions()
+    local fpsText = "FPS: " .. tostring(love.timer.getFPS())
+
+    love.graphics.print(G.VERSION, width - Font:getWidth(G.VERSION) - 10, 0)
+    love.graphics.print(fpsText, width - Font:getWidth(fpsText) - 10, 50)
 
 
     love.graphics.setLineStyle("rough")
     love.graphics.setLineWidth(10)
-    love.graphics.circle("line", 200, 200, 100)
 
-    G:Draw()
+    G:draw()
 end
 
 function love.errhand(msg)

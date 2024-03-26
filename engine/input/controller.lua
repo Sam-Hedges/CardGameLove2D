@@ -727,7 +727,7 @@ function Controller:button_press_update(button, dt)
         if button == 'start' then
             if Game.STATE == Game.STATES.SPLASH then
                 Game:delete_run()
-                Game:MainMenu()
+                Game:main_menu()
             end
         end
         if button == "a" then
@@ -799,7 +799,7 @@ function Controller:key_press_update(key, dt)
     if key == "escape" then
         if Game.STATE == Game.STATES.SPLASH then
             Game:delete_run()
-            Game:MainMenu()
+            Game:main_menu()
         else
             if not Game.OVERLAY_MENU then
                 Game.FUNCS:options()
@@ -868,18 +868,18 @@ function Controller:key_press_update(key, dt)
         end
         if key == 'b' then
             Game:delete_run()
-            Game:StartRun({})
+            Game:start_run({})
         end
         if key == 'l' then
             Game:delete_run()
             Game.SAVED_GAME = get_compressed(Game.SETTINGS.profile .. '/' .. 'save.jkr')
             if Game.SAVED_GAME ~= nil then Game.SAVED_GAME = STR_UNPACK(Game.SAVED_GAME) end
-            Game:StartRun({ savetext = Game.SAVED_GAME })
+            Game:start_run({ savetext = Game.SAVED_GAME })
         end
         if key == 'j' then
             Game.debug_splash_size_toggle = not Game.debug_splash_size_toggle
             Game:delete_run()
-            Game:MainMenu('splash')
+            Game:main_menu('splash')
         end
         if key == '8' then
             love.mouse.setVisible(not love.mouse.isVisible())
@@ -913,7 +913,7 @@ function Controller:key_hold_update(key, dt)
                 if not Game.GAME.won and not Game.GAME.seeded and not Game.GAME.challenge then
                     Game.PROFILES[Game.SETTINGS.profile].high_scores.current_streak.amt = 0
                 end
-                Game:SaveSettings()
+                Game:save_settings()
                 self.held_key_times[key] = nil
                 Game.SETTINGS.current_setup = 'New Run'
                 Game.GAME.viewed_back = nil

@@ -1,11 +1,4 @@
 ---Converts a hexadecimal color string to a RGBA color table compatible with Love2D.
--- The function expects a hex string and converts it to a table containing the RGBA values
--- scaled to the range [0, 1]. If the alpha value is not provided in the hex string,
--- it defaults to 'FF' (opaque).
----@param value string A string representing the color in hexadecimal format. This can be in the form of
--- 'RRGGBB' or 'RRGGBBAA'. If 'AA' (alpha) is not provided, it defaults to 'FF'.
----@return table colour A table containing the RGBA color values as numbers in the range [0, 1]. The table
--- structure is {red, green, blue, alpha}, where each value is scaled between 0 and 1.
 function HexToRGBA(value)
     -- If the hex string does not include an alpha value, append 'FF' to make it opaque
     if #value <= 6 then value = value .. "FF" end

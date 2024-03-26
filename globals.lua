@@ -1,7 +1,7 @@
 -- Release State, Update, Hotfix
 local VERSION = '0.0.0' .. (_DEMO_MODE and '-DEMO' or '-FULL')
 
-function Game:SetGlobals()
+function Game:set_globals()
     self.VERSION = VERSION
 
     -------------------------------
@@ -76,6 +76,14 @@ function Game:SetGlobals()
     -------------------------------
     --          INSTANCES
     -------------------------------
+    self.I = {
+        GAMEOBJECT = {},
+        MOVEABLE = {},
+        SPRITE = {},
+        UIBOX = {},
+        POPUP = {},
+        CARD = {},
+    }
 
 
     -------------------------------
