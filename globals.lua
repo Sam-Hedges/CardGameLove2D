@@ -5,6 +5,13 @@ function Game:set_globals()
     self.VERSION = VERSION
 
     -------------------------------
+    --         Debug Flags
+    -------------------------------
+
+    self.DEBUG_COLLIDERS = true
+
+
+    -------------------------------
     --         Feature Flags
     -------------------------------
 
@@ -76,7 +83,8 @@ function Game:set_globals()
     -------------------------------
     --          INSTANCES
     -------------------------------
-    self.I = {
+    self.CONTROLLER = nil
+    self.INSTANCES = {
         GAMEOBJECT = {},
         MOVEABLE = {},
         SPRITE = {},

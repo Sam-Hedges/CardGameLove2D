@@ -5,7 +5,7 @@ Object.__index = Object
 
 --- Initializes a new instance of an object.
 --- This method should be overridden by subclasses to implement specific initializations.
-function Object:new()
+function Object:new(...)
 end
 
 --- Creates and returns a new class that extends this class.

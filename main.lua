@@ -1,8 +1,4 @@
-require "engine/graphics/colour"
-require "engine/core/object"
-require "engine/core/gameobject"
-require "engine/core/transform"
-require "engine/input/controller"
+require "engine/init"
 require "game"
 require "globals"
 
@@ -105,7 +101,9 @@ function love.errhand(msg)
 end
 
 function love.keypressed(key)
-
+    if key == "escape" then
+        love.event.quit()
+    end
 end
 
 function love.keyreleased(key)

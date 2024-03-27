@@ -14,6 +14,7 @@ function Game:start()
     ---@todo Call the http manager
     ---@todo Load all shaders from resources
     ---@todo Input handler/controller for game objects
+    self.CONTROLLER = Controller()
 
     -- self:LoadProfile()
     -- self:SetRenderSettings()
@@ -22,19 +23,27 @@ function Game:start()
     ---@todo Create sprite class
     ---@todo Create the event manager for the game
 
-    local body = Gameobject()
+    Game.DEBUG = true
+    local args = {
+        transform = Transform(0, 0, 100, 100, 0),
+    }
 
-    print(body.ID)
+    local body = Gameobject(args)
+
+    print(tostring(body.transform.position))
+    print(tostring(body.transform.scale))
 end
 
 ---@todo Implement Game Logic Loop
 function Game:update(dt)
-
+    for k, value in pairs(self.INSTANCES.GAMEOBJECT) do
+        value:update(dt)
+    end
 end
 
 ---@todo Implement Game Draw Loop
 function Game:draw()
-    for k, value in pairs(self.I.GAMEOBJECT) do
+    for k, value in pairs(self.INSTANCES.GAMEOBJECT) do
         love.graphics.push()
         value:draw()
         love.graphics.pop()

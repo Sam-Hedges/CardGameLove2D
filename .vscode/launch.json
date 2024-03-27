@@ -4,7 +4,7 @@
         {
             "type": "lua-local",
             "request": "launch",
-            "name": "Launch Love2D",
+            "name": "Love2D",
             "program": {
                 "command": "love"
             },

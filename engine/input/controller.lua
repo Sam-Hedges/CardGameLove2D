@@ -1,44 +1,23 @@
 ---@class Controller
 Controller = Object:extend()
 
---The controller contains all engine logic for how human input interacts with any game objects.
-function Controller:Initialize()
-    --Each of these are calculated per frame to pass along to the corresponding nodes for input handling
-    self.clicked = { target = nil, handled = true, prev_target = nil }     --The node that was clicked this frame
-    self.focused = { target = nil, handled = true, prev_target = nil }     --The node that is being focused on this frame, only applies when using controller
-    self.dragging = { target = nil, handled = true, prev_target = nil }    --The node being dragged this frame
-    self.hovering = { target = nil, handled = true, prev_target = nil }    --The node being hovered this frame
-    self.released_on = { target = nil, handled = true, prev_target = nil } --The node that the cursor 'Released' on, like letting go of LMB
+--The controller contains all engine logic for how player input interacts with any game objects.
+function Controller:new()
+    --Each of these are calculated per frame to pass along to the corresponding gameobjects for input handling
+    self.clicked = { target = nil, handled = true, prev_target = nil }     --The gameobject that was clicked this frame
+    self.focused = { target = nil, handled = true, prev_target = nil }     --The gameobject that is being focused on this frame, only applies when using controller
+    self.dragging = { target = nil, handled = true, prev_target = nil }    --The gameobject being dragged this frame
+    self.hovering = { target = nil, handled = true, prev_target = nil }    --The gameobject being hovered this frame
+    self.released_on = { target = nil, handled = true, prev_target = nil } --The gameobject that the cursor 'Released' on, like letting go of LMB
 
-    self.collision_list = {}                                               --A list of all node that the cursor currently collides with
+    self.collision_list = {}                                               --A list of all gameobject that the cursor currently collides with
 
     --Input values to be determined by this controller - the actual game objects should not have to see any of this
     self.cursor_down = { T = { x = 0, y = 0 }, target = nil, time = 0, handled = true }
     self.cursor_up = { T = { x = 0, y = 0 }, target = nil, time = 0.1, handled = true }
     self.cursor_hover = { T = { x = 0, y = 0 }, target = nil, time = 0, handled = true }
-    self.cursor_collider = nil              --The node that collides with the cursor this frame
+    self.cursor_collider = nil              --The gameobject that collides with the cursor this frame
     self.cursor_position = { x = 0, y = 0 } --NOT IN GAME UNITS
-
-    --For key presses, hold times, and if they are released directly from LOVE
-    self.pressed_keys = {}
-    self.held_keys = {}
-    self.held_key_times = {}
-    self.released_keys = {}
-
-    --For button presses, hold times, and if they are released directly from LOVE
-    self.pressed_buttons = {}
-    self.held_buttons = {}
-    self.held_button_times = {}
-    self.released_buttons = {}
-
-    --For all controller interrupts
-    self.interrupt = {
-        focus = false,
-    }
-
-    --For all controller locks
-    self.locks = {}
-    self.locked = nil
 
     --Buttons pressed and released during axis updates
     self.axis_buttons = {
@@ -50,21 +29,6 @@ function Controller:Initialize()
 
     --The speed that the controller thumbstick moves the cursor
     self.axis_cursor_speed = 20
-
-    --A registry of buttons, each a valid button input name corresponding to a node (likely a button). This is modified with the registry functions
-    self.button_registry = {}
-
-    --A node representing where the cursor should 'snap' to. When this is set, then next frame should have the cursor to that position or on that node. Use :snap_to
-    self.snap_cursor_to = nil
-
-    --A stack of cursor positions, this stack changes depending on the depth of menus on screen so the game can remember where you last had your cursor
-    --This needs to keep track of both positions and nodes if possible, as well as the depth
-    self.cursor_context = {
-        layer = 1,
-        stack = {}
-    }
-
-    self.cardarea_context = {}
 
     --Human Interface device flags, these are set per frame to ensure that correct controller updates are taking place
     self.HID = {
@@ -80,14 +44,6 @@ function Controller:Initialize()
     --The gamepad most recently used, if any
     self.GAMEPAD = { object = nil, mapping = nil, name = nil }
     self.GAMEPAD_CONSOLE = '' --Valid button icons for Xbox, Playstation and Nintendo controllers
-
-    --If we need an emulated gamepad for keyboard controls
-    self.keyboard_controller = {
-        getGamepadMappingString = function() return 'balatro_kbm' end,
-        getGamepadAxis = function() return 0 end
-    }
-
-    self.is_cursor_down = false
 end
 
 --Sets the gamepad to be the updated gamepad, searches for the console type and sets the art button pips accordingly
@@ -271,10 +227,10 @@ function Controller:update(dt)
 
     --If using controller, update context and snap tos
     if self.HID.controller then
-        --If there is a node/position to snap to from the cursor context layer
+        --If there is a gameobject/position to snap to from the cursor context layer
         if self.cursor_context.stack[self.cursor_context.layer] then
             local _context = self.cursor_context.stack[self.cursor_context.layer]
-            self:snap_to { node = (_context.node and not _context.node.REMOVED and _context.node), T = _context.cursor_pos }
+            self:snap_to { gameobject = (_context.gameobject and not _context.gameobject.REMOVED and _context.gameobject), T = _context.cursor_pos }
             self.interrupt.stack = _context.interrupt
             self.cursor_context.stack[self.cursor_context.layer] = nil
         end
@@ -282,7 +238,7 @@ function Controller:update(dt)
         if self.dragging.prev_target and not self.dragging.target and getmetatable(self.dragging.prev_target) == Card and not self.dragging.prev_target.REMOVED then
             --Overly complicated coyote time focus, so the user can quickly select cards without things going wonky
             if not self.COYOTE_FOCUS then
-                self:snap_to { node = self.dragging.prev_target }
+                self:snap_to { gameobject = self.dragging.prev_target }
             else
                 self.COYOTE_FOCUS = nil
             end
@@ -291,9 +247,9 @@ function Controller:update(dt)
         if self.snap_cursor_to then
             self.interrupt.focus = self.interrupt.stack
             self.interrupt.stack = false
-            if self.snap_cursor_to.type == 'node' and not self.snap_cursor_to.node.REMOVED then
+            if self.snap_cursor_to.type == 'gameobject' and not self.snap_cursor_to.gameobject.REMOVED then
                 self.focused.prev_target = self.focused.target
-                self.focused.target = self.snap_cursor_to.node
+                self.focused.target = self.snap_cursor_to.gameobject
                 self:update_cursor()
             elseif self.snap_cursor_to.type == 'transform' then
                 self:update_cursor(self.snap_cursor_to.T)
@@ -303,7 +259,7 @@ function Controller:update(dt)
         end
     end
 
-    --Reset all collision states, get every node that collides with the cursor, then update the focus and hover targets
+    --Reset all collision states, get every gameobject that collides with the cursor, then update the focus and hover targets
     self:get_cursor_collision(Game.CURSOR.T)
     self:update_focus()
     self:set_cursor_hover()
@@ -427,40 +383,40 @@ function Controller:update(dt)
     end
 end
 
---Brute force remove all registries that no longer have valid nodes
+--Brute force remove all registries that no longer have valid gameobjects
 function Controller:cull_registry()
     for k, registry in pairs(self.button_registry) do
         for i = #registry, 1, -1 do
-            if registry[i].node.REMOVED then
+            if registry[i].gameobject.REMOVED then
                 table.remove(registry, i)
             end
         end
     end
 end
 
---Adds a node to the controller registry. Supply the button that will be pressed in order to click this node
+--Adds a gameobject to the controller registry. Supply the button that will be pressed in order to click this gameobject
 --
----@param node Node The node that will be clicked when the registry is pressed
+---@param gameobject gameobject The gameobject that will be clicked when the registry is pressed
 ---@param registry string The button to register, must be a valid gamepad input
-function Controller:add_to_registry(node, registry)
+function Controller:add_to_registry(gameobject, registry)
     --If the button doesn't have a registry list yet, add it
     self.button_registry[registry] = self.button_registry[registry] or {}
 
     --There really should only ever be one entry per registered button, but that is hard sometimes with all the stuff on screen.
     --If that does happen, the most recently registered one will be used and the old one will be kept in case we remove the new button and want to keep the old binding
     table.insert(self.button_registry[registry], 1,
-        { node = node, menu = (not not Game.OVERLAY_MENU) or (not not Game.SETTINGS.paused) })
+        { gameobject = gameobject, menu = (not not Game.OVERLAY_MENU) or (not not Game.SETTINGS.paused) })
 end
 
---Process any click function of any nodes that have been clicked in the button registry
+--Process any click function of any gameobjects that have been clicked in the button registry
 function Controller:process_registry()
     for _, registry in pairs(self.button_registry) do
         for i = 1, #registry do
-            if registry[i].click and registry[i].node.click then
+            if registry[i].click and registry[i].gameobject.click then
                 if registry[i].menu == not not Game.OVERLAY_MENU and
-                    registry[i].node.T.x > -2 and registry[i].node.T.x < Game.ROOM.T.w + 2 and
-                    registry[i].node.T.y > -2 and registry[i].node.T.y < Game.ROOM.T.h + 2 then
-                    registry[i].node:click()
+                    registry[i].gameobject.T.x > -2 and registry[i].gameobject.T.x < Game.ROOM.T.w + 2 and
+                    registry[i].gameobject.T.y > -2 and registry[i].gameobject.T.y < Game.ROOM.T.h + 2 then
+                    registry[i].gameobject:click()
                 end
                 registry[i].click = nil
             end
@@ -473,10 +429,10 @@ end
 --
 ---@param delta number The direction to modify the cursor context, 1 to add a layer, -1 to remove a layer, -1000 to remove all layers except for the base
 function Controller:mod_cursor_context_layer(delta)
-    --Add a layer to the context, reference the node but if that node has been removed also save the cursor position too
+    --Add a layer to the context, reference the gameobject but if that gameobject has been removed also save the cursor position too
     if delta == 1 then
         local prev_cursor_context = {
-            node = self.focused.target,
+            gameobject = self.focused.target,
             cursor_pos = { x = Game.CURSOR.T.x, y = Game.CURSOR.T.y },
             interrupt =
                 self.interrupt.focus
@@ -504,9 +460,14 @@ function Controller:mod_cursor_context_layer(delta)
     self:navigate_focus()
 end
 
---Snap the cursor to a particular node or transform
+--Snap the cursor to a particular gameobject or transform
 function Controller:snap_to(args)
-    self.snap_cursor_to = { node = args.node, T = args.T, type = args.node and 'node' or 'transform' }
+    self.snap_cursor_to = {
+        gameobject = args.gameobject,
+        T = args.T,
+        type = args.gameobject and 'gameobject' or
+            'transform'
+    }
 end
 
 --saves the focus context to be loaded in the future, for example if the shop is rerolled while a card is highlighted
@@ -534,20 +495,20 @@ function Controller:recall_cardarea_focus(_cardarea)
         if ca_string and self.cardarea_context[ca_string] then
             for i = self.cardarea_context[ca_string], 1, -1 do
                 if _cardarea.cards[i] then
-                    self:snap_to({ node = _cardarea.cards[i] })
+                    self:snap_to({ gameobject = _cardarea.cards[i] })
                     self.interrupt.focus = false
                     break
                 end
             end
         elseif _cardarea.cards and _cardarea.cards[1] then
-            self:snap_to({ node = _cardarea.cards[1] })
+            self:snap_to({ gameobject = _cardarea.cards[1] })
             self.interrupt.focus = false
         end
     end
     if ca_string then self.cardarea_context[ca_string] = nil end
 end
 
---Updated the location of the cursor, either with a specific T or if there is a Node target
+--Updated the location of the cursor, either with a specific T or if there is a gameobject target
 function Controller:update_cursor(hard_set_T)
     if hard_set_T then
         Game.CURSOR.T.x = hard_set_T.x
@@ -669,7 +630,7 @@ function Controller:update_axis(dt)
         self.axis_buttons.l_trig.current = self.axis_buttons.l_trig.previous
         self.axis_buttons.r_trig.current = self.axis_buttons.r_trig.previous
 
-        --Make a tilting effect when you press the triggers while hovering over a node that has tilt_var
+        --Make a tilting effect when you press the triggers while hovering over a gameobject that has tilt_var
         if self.focused.target and self.focused.target.tilt_var then
             --self.focused.target.tilt_var.dx = 0.1*(r_trig - l_trig) + 0.9*self.focused.target.tilt_var.dx
         end
@@ -721,7 +682,7 @@ function Controller:button_press_update(button, dt)
     if ((self.locked) and not Game.SETTINGS.paused) or (self.locks.frame) or (self.frame_buttonpress) then return end
     self.frame_buttonpress = true
 
-    if self.button_registry[button] and self.button_registry[button][1] and not self.button_registry[button][1].node.under_overlay then
+    if self.button_registry[button] and self.button_registry[button][1] and not self.button_registry[button][1].gameobject.under_overlay then
         self.button_registry[button][1].click = true
     else
         if button == 'start' then
@@ -967,12 +928,12 @@ end
 
 function Controller:get_cursor_collision(cursor_trans)
     self.collision_list = EMPTY(self.collision_list)
-    self.nodes_at_cursor = EMPTY(self.nodes_at_cursor)
+    self.gameobjects_at_cursor = EMPTY(self.gameobjects_at_cursor)
 
     if self.COYOTE_FOCUS then return end
     if self.dragging.target then
         self.dragging.target.states.collide.is = true
-        self.nodes_at_cursor[#self.nodes_at_cursor + 1] = self.dragging.target
+        self.gameobjects_at_cursor[#self.gameobjects_at_cursor + 1] = self.dragging.target
         self.collision_list[#self.collision_list + 1] = self.dragging.target
     end
 
@@ -986,7 +947,7 @@ function Controller:get_cursor_collision(cursor_trans)
     for i = #DRAW_HASH_SQUARE, 1, -1 do
         local v = DRAW_HASH_SQUARE[i]
         if v:collides_with_point(cursor_trans) and not v.REMOVED then
-            self.nodes_at_cursor[#self.nodes_at_cursor + 1] = v
+            self.gameobjects_at_cursor[#self.gameobjects_at_cursor + 1] = v
             if v.states.collide.can then
                 v.states.collide.is = true
                 self.collision_list[#self.collision_list + 1] = v
@@ -1067,10 +1028,12 @@ function Controller:L_cursor_press(x, y)
     self.cursor_down.target = nil
     self.is_cursor_down = true
 
-    local press_node = (self.HID.touch and self.cursor_hover.target) or self.hovering.target or self.focused.target
+    local press_gameobject = (self.HID.touch and self.cursor_hover.target) or self.hovering.target or self.focused
+        .target
 
-    if press_node then
-        self.cursor_down.target = press_node.states.click.can and press_node or press_node:can_drag() or nil
+    if press_gameobject then
+        self.cursor_down.target = press_gameobject.states.click.can and press_gameobject or press_gameobject:can_drag() or
+            nil
     end
 
     if self.cursor_down.target == nil then
@@ -1097,25 +1060,25 @@ function Controller:L_cursor_release(x, y)
     end
 end
 
-function Controller:is_node_focusable(node)
+function Controller:is_gameobject_focusable(gameobject)
     local ret_val = false
-    if node.T.y > Game.ROOM.T.h + 3 then return false end
-    if not node.REMOVED and not node.under_overlay and (node.states.hover.can and not self.dragging.target or self.dragging.target == node) and
-        (not not node.created_on_pause) == (not not Game.SETTINGS.paused) and
-        (node.states.visible) and (not node.UIBox or node.UIBox.states.visible) then
+    if gameobject.T.y > Game.ROOM.T.h + 3 then return false end
+    if not gameobject.REMOVED and not gameobject.under_overlay and (gameobject.states.hover.can and not self.dragging.target or self.dragging.target == gameobject) and
+        (not not gameobject.created_on_pause) == (not not Game.SETTINGS.paused) and
+        (gameobject.states.visible) and (not gameobject.UIBox or gameobject.UIBox.states.visible) then
         if self.screen_keyboard then
-            if node.UIBox and node.UIBox == self.screen_keyboard and node.config.button then
+            if gameobject.UIBox and gameobject.UIBox == self.screen_keyboard and gameobject.config.button then
                 ret_val = true
             end
         else
-            if node:is(Card) and (node.facing == 'front' or node.area == Game.hand or node.area == Game.jokers or (node == Game.deck)) and
-                node.states.hover.can and not node.jimbo then
+            if gameobject:is(Card) and (gameobject.facing == 'front' or gameobject.area == Game.hand or gameobject.area == Game.jokers or (gameobject == Game.deck)) and
+                gameobject.states.hover.can and not gameobject.jimbo then
                 ret_val = true
             end
-            if node.config and node.config.force_focus then ret_val = true end
-            if node.config and node.config.button then ret_val = true end
-            if node.config and node.config.focus_args then
-                if node.config.focus_args.type == 'none' or node.config.focus_args.funnel_from then
+            if gameobject.config and gameobject.config.force_focus then ret_val = true end
+            if gameobject.config and gameobject.config.button then ret_val = true end
+            if gameobject.config and gameobject.config.focus_args then
+                if gameobject.config.focus_args.type == 'none' or gameobject.config.focus_args.funnel_from then
                     ret_val = false
                 else
                     ret_val = true
@@ -1126,10 +1089,10 @@ function Controller:is_node_focusable(node)
     return ret_val
 end
 
---essentially works like 'hovering' with any nodes that are focusable, but
---the nodes can also be navigated to via controller key inputs. If no direction is supplied,
---this function focuses on any nodes that collide with this cursor. If a direction is
---supplied, focuses on the nearest node in that direction.
+--essentially works like 'hovering' with any gameobjects that are focusable, but
+--the gameobjects can also be navigated to via controller key inputs. If no direction is supplied,
+--this function focuses on any gameobjects that collide with this cursor. If a direction is
+--supplied, focuses on the nearest gameobject in that direction.
 function Controller:update_focus(dir)
     self.focused.prev_target = self.focused.target
 
@@ -1150,25 +1113,25 @@ function Controller:update_focus(dir)
     if self.focused.target then
         self.focused.target.states.focus.is = false
 
-        --If that node is no longer focusable or if the cursor no longer collides with the node, remove the target
-        if not self:is_node_focusable(self.focused.target) or not self.focused.target:collides_with_point(Game.CURSOR.T) or self.HID.axis_cursor then
+        --If that gameobject is no longer focusable or if the cursor no longer collides with the gameobject, remove the target
+        if not self:is_gameobject_focusable(self.focused.target) or not self.focused.target:collides_with_point(Game.CURSOR.T) or self.HID.axis_cursor then
             self.focused.target = nil
         end
     end
 
     --Now we check for 3 criteria:
     --1: is there a current focused target and no dpad direction? if so, we simply add the currsnt focused target to the focusable list and set the state to true
-    --2: if not, and there is no dpad direction, iterate through the node list that the cursor intersects and check if any are focusable, only add the first one
+    --2: if not, and there is no dpad direction, iterate through the gameobject list that the cursor intersects and check if any are focusable, only add the first one
     --3: if there is a direction, add all focusable moveables to the focusable list to check later
     if not dir and self.focused.target then
         self.focused.target.states.focus.can = true
         Game.ARGS.focusables[#Game.ARGS.focusables + 1] = self.focused.target
     else
         if not dir then
-            for k, v in ipairs(self.nodes_at_cursor) do
+            for k, v in ipairs(self.gameobjects_at_cursor) do
                 v.states.focus.can = false
                 v.states.focus.is = false
-                if #Game.ARGS.focusables == 0 and self:is_node_focusable(v) then
+                if #Game.ARGS.focusables == 0 and self:is_gameobject_focusable(v) then
                     v.states.focus.can = true
                     Game.ARGS.focusables[#Game.ARGS.focusables + 1] = v
                 end
@@ -1177,7 +1140,7 @@ function Controller:update_focus(dir)
             for k, v in pairs(Game.MOVEABLES) do
                 v.states.focus.can = false
                 v.states.focus.is = false
-                if self:is_node_focusable(v) then
+                if self:is_gameobject_focusable(v) then
                     v.states.focus.can = true
                     Game.ARGS.focusables[#Game.ARGS.focusables + 1] = v
                 end
@@ -1187,13 +1150,18 @@ function Controller:update_focus(dir)
 
     --If there are any valid focusables
     if #Game.ARGS.focusables > 0 then
-        --If a direction control is supplied, set the target to be the closest node in that direction
+        --If a direction control is supplied, set the target to be the closest gameobject in that direction
         if dir then
             if (dir == 'L' or dir == 'R') and self.focused.target and self.focused.target:is(Card) and self.focused.target.area == Game.hand and Game.hand then
                 local nu_rank = self.focused.target.rank + (dir == 'L' and -1 or 1)
                 if nu_rank > #Game.hand.cards then nu_rank = 1 end
                 if nu_rank == 0 then nu_rank = #Game.hand.cards end
-                if nu_rank ~= self.focused.target.rank then Game.ARGS.focus_list[1] = { node = Game.hand.cards[nu_rank] } end
+                if nu_rank ~= self.focused.target.rank then
+                    Game.ARGS.focus_list[1] = {
+                        gameobject = Game.hand.cards
+                            [nu_rank]
+                    }
+                end
             else
                 --set the cursor position to where it currently is on screen
                 Game.ARGS.focus_cursor_pos = Game.ARGS.focus_cursor_pos or {}
@@ -1217,7 +1185,7 @@ function Controller:update_focus(dir)
                         Game.ROOM.T.y
                 end
 
-                --set the list to be all the nodes in that direction sorted by the closest node
+                --set the list to be all the gameobjects in that direction sorted by the closest gameobject
                 for _, v in pairs(Game.ARGS.focusables) do
                     if v ~= self.hovering.target and v ~= self.focused.target then
                         local eligible = false
@@ -1264,7 +1232,7 @@ function Controller:update_focus(dir)
 
                         if eligible then
                             Game.ARGS.focus_list[#Game.ARGS.focus_list + 1] = {
-                                node = v,
+                                gameobject = v,
                                 dist = math.abs(Game.ARGS.focus_vec.x) +
                                     math.abs(Game.ARGS.focus_vec.y)
                             }
@@ -1279,20 +1247,20 @@ function Controller:update_focus(dir)
             end
         else
             if self.focused.target then
-                Game.ARGS.focus_list[#Game.ARGS.focus_list + 1] = { node = self.focused.target, dist = 0 }
+                Game.ARGS.focus_list[#Game.ARGS.focus_list + 1] = { gameobject = self.focused.target, dist = 0 }
             else
                 --otherwise, get the focusable that collides
-                Game.ARGS.focus_list[#Game.ARGS.focus_list + 1] = { node = Game.ARGS.focusables[1], dist = 0 }
+                Game.ARGS.focus_list[#Game.ARGS.focus_list + 1] = { gameobject = Game.ARGS.focusables[1], dist = 0 }
             end
         end
     end
 
-    --now with the lists created, set the focused target to be the first node in the list
+    --now with the lists created, set the focused target to be the first gameobject in the list
     if Game.ARGS.focus_list[1] then
-        if Game.ARGS.focus_list[1].node.config and Game.ARGS.focus_list[1].node.config.focus_args and Game.ARGS.focus_list[1].node.config.focus_args.funnel_from then
-            self.focused.target = Game.ARGS.focus_list[1].node.config.focus_args.funnel_from
+        if Game.ARGS.focus_list[1].gameobject.config and Game.ARGS.focus_list[1].gameobject.config.focus_args and Game.ARGS.focus_list[1].gameobject.config.focus_args.funnel_from then
+            self.focused.target = Game.ARGS.focus_list[1].gameobject.config.focus_args.funnel_from
         else
-            self.focused.target = Game.ARGS.focus_list[1].node
+            self.focused.target = Game.ARGS.focus_list[1].gameobject
         end
         if self.focused.target ~= self.focused.prev_target then Game.VIBRATION = Game.VIBRATION + 0.7 end
     else
@@ -1302,119 +1270,9 @@ function Controller:update_focus(dir)
     if self.focused.target then self.focused.target.states.focus.is = true end
 end
 
+---@todo Implement 'coyote time' selection, if button down, and before timer is up direction is used, register input.
 function Controller:capture_focused_input(button, input_type, dt)
-    local ret = false
-    local focused = self.focused.target
-    local extern_button = false
-    self.no_holdcap = nil
 
-    --Implementing 'coyote time' type selection where a full button press isnt needed to select a card in hand. As long as a button down has been registered
-    --before a timer is up and the dpad is used to move to the next card it should register
-    if input_type == 'press' and (button == 'dpleft' or button == 'dpright') and
-        focused and self.dragging.target and
-        (self.held_button_times['a'] and self.held_button_times['a'] < 0.12) and
-        focused.area and focused.area:can_highlight(focused) then
-        self:L_cursor_release()
-        self:navigate_focus(button == 'dpleft' and 'L' or 'R')
-        self.held_button_times['a'] = nil
-        self.COYOTE_FOCUS = true
-        ret = true
-    elseif input_type == 'press' and focused and focused.area and focused == self.dragging.target then
-        focused.states.drag.is = false
-        if button == 'dpleft' and focused.rank > 1 then
-            focused.rank = focused.rank - 1
-            focused.area.cards[focused.rank].rank = focused.rank + 1
-            table.sort(focused.area.cards, function(a, b) return a.rank < b.rank end)
-            focused.area:align_cards()
-            self:update_cursor()
-        elseif button == 'dpright' and focused.rank < #focused.area.cards then
-            focused.rank = focused.rank + 1
-            focused.area.cards[focused.rank].rank = focused.rank - 1
-            table.sort(focused.area.cards, function(a, b) return a.rank < b.rank end)
-            focused.area:align_cards()
-            self:update_cursor()
-        end
-        focused.states.drag.is = true
-        ret = true
-    end
-
-    if Game.OVERLAY_MENU and not self.screen_keyboard and input_type == 'press' and Game.OVERLAY_MENU:get_UIE_by_ID('tab_shoulders') and (button == 'leftshoulder' or button == 'rightshoulder') then
-        focused = Game.OVERLAY_MENU:get_UIE_by_ID('tab_shoulders')
-        extern_button = true
-    end
-    if Game.OVERLAY_MENU and not self.screen_keyboard and input_type == 'press' and Game.OVERLAY_MENU:get_UIE_by_ID('cycle_shoulders') and (button == 'leftshoulder' or button == 'rightshoulder') then
-        focused = Game.OVERLAY_MENU:get_UIE_by_ID('cycle_shoulders').children[1]
-        extern_button = true
-    end
-    if focused and focused.config.focus_args then
-        if focused.config.focus_args.type == 'cycle' and input_type == 'press' then
-            if ((extern_button and button == 'leftshoulder') or (not extern_button and button == 'dpleft')) then
-                focused.children[1]:click()
-                ret = true
-            end
-            if ((extern_button and button == 'rightshoulder') or (not extern_button and button == 'dpright')) then
-                focused.children[3]:click()
-                ret = true
-            end
-        end
-        if focused.config.focus_args.type == 'tab' and input_type == 'press' then
-            local proto_choices = focused.UIBox:get_group(nil, focused.children[1].children[1].config.group)
-            local choices = {}
-            for k, v in ipairs(proto_choices) do
-                if v.config.choice and v.config.button then choices[#choices + 1] = v end
-            end
-            for k, v in ipairs(choices) do
-                if v.config.chosen then
-                    if ((extern_button and button == 'leftshoulder') or (not extern_button and button == 'dpleft')) then
-                        local next_i = k ~= 1 and (k - 1) or (#choices)
-                        if focused.config.focus_args.no_loop and next_i > k then
-                            ret = nil
-                        else
-                            choices[next_i]:click()
-                            self:snap_to({ node = choices[next_i] })
-                            self:update_cursor()
-                            ret = true
-                        end
-                    elseif ((extern_button and button == 'rightshoulder') or (not extern_button and button == 'dpright')) then
-                        local next_i = k ~= #choices and (k + 1) or (1)
-                        if focused.config.focus_args.no_loop and next_i < k then
-                            ret = nil
-                        else
-                            choices[next_i]:click()
-                            self:snap_to({ node = choices[next_i] })
-                            self:update_cursor()
-                            ret = true
-                        end
-                    end
-                    break
-                end
-            end
-        end
-        if focused.config.focus_args.type == 'slider' then
-            if button == 'dpleft' then
-                self.no_holdcap = true
-                if input_type == 'hold' and self.held_button_times[button] > 0.2 then
-                    Game.FUNCS.slider_descreet(focused.children[1], -dt * self.held_button_times[button] * 0.6)
-                end
-                if input_type == 'press' then
-                    Game.FUNCS.slider_descreet(focused.children[1], -0.01)
-                end
-                ret = true
-            end
-            if button == 'dpright' then
-                self.no_holdcap = true
-                if input_type == 'hold' and self.held_button_times[button] > 0.2 then
-                    Game.FUNCS.slider_descreet(focused.children[1], dt * self.held_button_times[button] * 0.6)
-                end
-                if input_type == 'press' then
-                    Game.FUNCS.slider_descreet(focused.children[1], 0.01)
-                end
-                ret = true
-            end
-        end
-    end
-    if ret == true then Game.VIBRATION = Game.VIBRATION + 1 end
-    return ret
 end
 
 function Controller:navigate_focus(dir)

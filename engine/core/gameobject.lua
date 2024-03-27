@@ -3,11 +3,19 @@
 ---@class Gameobject
 Gameobject = Object:extend()
 
----@param args {Transform: table, container: Gameobject}
+---@param args {transform: Transform, collider: Collider, parent: Gameobject}
 --**T** The transform ititializer, with keys of x|1, y|2, w|3, h|4, r|5\
---**container** optional container for this Node, defaults to G.ROOM
-function Gameobject:new()
+--**Collider** optional collider for this Gameobject, defaults to new BoxCollider\
+--**parent** optional container for this Gameobject, defaults to G.ROOM\
+function Gameobject:new(args)
     --ID tracker, every Node has a unique ID
+
+    self.transform = args.transform or Transform()     -- Default to a basic Transform if none provided.
+    self.collider = args.collider or BoxCollider(self) -- Default to a BoxCollider if none provided.
+
+    -- Define velocity
+    self.velocity = { x = 100, y = 100 } -- Adjust the speed as necessary.
+
     G.ID = G.ID or 1
     self.ID = G.ID
     G.ID = G.ID + 1
@@ -18,51 +26,44 @@ function Gameobject:new()
 
     -- Add the gameobject to the global gameobject table
     if getmetatable(self) == Gameobject then
-        table.insert(G.I.GAMEOBJECT, self)
+        table.insert(G.INSTANCES.GAMEOBJECT, self)
     end
 end
 
 --Draw a bounding rectangle representing the transform of this node. Used in debugging.
-function Gameobject:draw_boundingrect()
-    if not Game.DEBUG then return end
+function Gameobject:draw_collider()
+    if not G.DEBUG_COLLIDERS then return end
 
     -- Draw the bounding rectangle
+    self.collider:draw()
 end
 
 --Draws self, then adds self the the draw hash, then draws all children
 function Gameobject:draw()
-    self:draw_boundingrect()
+    self:draw_collider()
 
     for _, value in pairs(self.children) do
         value:draw()
     end
-
-    love.graphics.circle("line", 200, 200, 100)
 end
 
---Determines if this gameobject collides with some point. Applies any container translations and rotations, then\
---applies translations and rotations specific to this node. This means the collision detection effectively\
---determines if some point intersects this node regargless of rotation.
---
----@param point {x: number, y: number}
---**x and y** The coordinates of the cursor transformed into game units
-function Gameobject:collides_with_point(point)
+--Prototype update function for any object specific logic that needs to occur every frame
+function Gameobject:update(dt)
+    -- Move the gameobject like a tv screensaver
+    -- Update position based on velocity
+    self.transform.position.x = self.transform.position.x + self.velocity.x * dt
+    self.transform.position.y = self.transform.position.y + self.velocity.y * dt
 
-end
+    -- Screen boundaries
+    local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
 
---Sets the offset of passed point in terms of this nodes T.x and T.y
---
----@param point {x: number, y: number}
----@param type string
---**x and y** The coordinates of the cursor transformed into game units
---**type** the type of offset to set for this Node, either 'Click' or 'Hover'
-function Gameobject:set_offset(point, type)
-
-end
-
---Translation function used before any draw calls, translates this node according to the transform of the container node
-function Gameobject:translate_container()
-
+    -- Check for boundary collision and reverse direction if necessary
+    if self.transform.position.x <= 0 or self.transform.position.x + self.transform.scale.w >= screenWidth then
+        self.velocity.x = -self.velocity.x -- Reverse x direction
+    end
+    if self.transform.position.y <= 0 or self.transform.position.y + self.transform.scale.h >= screenHeight then
+        self.velocity.y = -self.velocity.y -- Reverse y direction
+    end
 end
 
 --When this Gameobject needs to be deleted, removes self from any tables it may have been added to to destroy any weak references
@@ -79,6 +80,3 @@ function Gameobject:click() end
 
 --Prototype animation function for any frame manipulation needed
 function Gameobject:animate() end
-
---Prototype update function for any object specific logic that needs to occur every frame
-function Gameobject:update(dt) end
